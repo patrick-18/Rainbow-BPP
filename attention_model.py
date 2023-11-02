@@ -1,8 +1,9 @@
 import torch
 from torch import nn
+from torch.nn import functional as F
 import math
 from typing import NamedTuple
-from graph_encoder import GraphAttentionEncoder
+from graph_encoder import GraphAttentionEncoder, NoisyLinear
 from distributions import FixedCategorical
 from tools import observation_decode_leaf_node, init
 
@@ -27,8 +28,7 @@ class AttentionModelFixed(NamedTuple):
 class AttentionModel(nn.Module):
 
     def __init__(self,
-                 embedding_dim,
-                 hidden_dim,
+                 args,
                  n_encode_layers=2,
                  tanh_clipping=10.,
                  mask_inner=False,
@@ -38,10 +38,14 @@ class AttentionModel(nn.Module):
                  internal_node_length = None,
                  leaf_node_holder = None,
                  ):
-        super(AttentionModel, self).__init__()
+        super(AttentionModel, self).__init__()\
+        
+        self.args = args
+        self.atoms = args.atoms
+        self.action_space = 32 # TODO: change this
 
-        self.embedding_dim = embedding_dim
-        self.hidden_dim = hidden_dim
+        self.embedding_dim = args.embedding_size
+        self.hidden_dim = args.hidden_size
         self.n_encode_layers = n_encode_layers
         self.decode_type = None
         self.temp = 1.0
@@ -51,12 +55,12 @@ class AttentionModel(nn.Module):
         self.mask_logits = mask_logits
 
         self.n_heads = n_heads
-        self.internal_node_holder = internal_node_holder
-        self.internal_node_length = internal_node_length
+        self.internal_node_holder = args.internal_node_holder
+        self.internal_node_length = args.internal_node_length
         self.next_holder = 1
-        self.leaf_node_holder = leaf_node_holder
+        self.leaf_node_holder = args.leaf_node_holder
 
-        graph_size = internal_node_holder + leaf_node_holder + self.next_holder
+        graph_size = self.internal_node_holder + self.leaf_node_holder + self.next_holder
 
         activate, ini = nn.LeakyReLU, 'leaky_relu'
         init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.constant_(x, 0), nn.init.calculate_gain(ini))
@@ -64,29 +68,44 @@ class AttentionModel(nn.Module):
         self.init_internal_node_embed = nn.Sequential(
             init_(nn.Linear(self.internal_node_length, 32)),
             activate(),
-            init_(nn.Linear(32, embedding_dim)))
+            init_(nn.Linear(32, self.embedding_dim)))
 
         self.init_leaf_node_embed  = nn.Sequential(
             init_(nn.Linear(8, 32)),
             activate(),
-            init_(nn.Linear(32, embedding_dim)))
+            init_(nn.Linear(32, self.embedding_dim)))
 
         self.init_next_embed = nn.Sequential(
             init_(nn.Linear(6, 32)),
             activate(),
-            init_(nn.Linear(32, embedding_dim)))
+            init_(nn.Linear(32, self.embedding_dim)))
 
         # Graph attention model
         self.embedder = GraphAttentionEncoder(
             n_heads=n_heads,
-            embed_dim=embedding_dim,
+            embed_dim=self.embedding_dim,
             n_layers=self.n_encode_layers,
             graph_size = graph_size,
         )
 
-        self.project_node_embeddings = nn.Linear(embedding_dim, 3 * embedding_dim, bias=False)
-        self.project_fixed_context = nn.Linear(embedding_dim, embedding_dim, bias=False)
-        assert embedding_dim % n_heads == 0
+        self.project_layer = nn.Sequential(
+            init_(nn.Linear(self.embedding_dim, self.embedding_dim)),
+            nn.LeakyReLU(),
+            init_(nn.Linear(self.embedding_dim, self.embedding_dim))
+        )
+
+        self.project_node_embeddings = nn.Linear(self.embedding_dim, 3 * self.embedding_dim, bias=False)
+        self.project_fixed_context = nn.Linear(self.embedding_dim, self.embedding_dim, bias=False)
+        self.fc_h_v = NoisyLinear(self.embedding_dim, args.hidden_size, std_init=args.noisy_std)
+        self.fc_h_a = NoisyLinear(self.embedding_dim, args.hidden_size, std_init=args.noisy_std)
+        self.fc_z_v = NoisyLinear(args.hidden_size, self.atoms, std_init=args.noisy_std)
+        self.fc_z_a = NoisyLinear(args.hidden_size, self.atoms, std_init=args.noisy_std)
+        assert self.embedding_dim % n_heads == 0
+
+    def reset_noise(self):
+        for name, module in self.named_children():
+            if 'fc' in name:
+                module.reset_noise()
 
     def forward(self, input, deterministic = False, evaluate_action = False, normFactor = 1, evaluate = False):
 
@@ -117,17 +136,40 @@ class AttentionModel(nn.Module):
 
         # transform init_embedding into high-level node features.
         embeddings, _ = self.embedder(init_embedding, mask = full_mask, evaluate = evaluate)
+        embeddings = self.project_layer(embeddings)
         embedding_shape = (batch_size, graph_size, embeddings.shape[-1])
+
+        # transform embeddings into Q values
+        transEmbedding = embeddings.view(embedding_shape)
+        full_mask = full_mask.view(embedding_shape[0], embedding_shape[1],1).expand(embedding_shape).bool()
+        transEmbedding[full_mask]  = 0
+        graph_embed = transEmbedding.view(embedding_shape).sum(1)
+        transEmbedding = transEmbedding.view(embeddings.shape)
+        graph_embed = graph_embed / valid_length.reshape((-1,1))
+
+        log = False
+        v = self.fc_z_v(F.relu(self.fc_h_v(graph_embed)))  # Value stream
+        a = self.fc_z_a(F.relu(self.fc_h_a(embeddings)))  # Advantage stream
+        v, a = v.view(-1, 1, self.atoms), a.view(-1, self.action_space, self.atoms)
+        q = v + a - a.mean(1, keepdim=True)  # Combine streams
+        if log:  # Use log softmax for numerical stability
+            q = F.log_softmax(q, dim=2)  # Log probabilities with action over second dimension
+        else:
+            q = F.softmax(q, dim=2)  # Probabilities with action over second dimension
+        # self.forwardCounter += 1
+        # if self.forwardCounter == 1000:
+        #     self.updateShapeArray()
+        return q
         
-        # Decide the leaf node indices for accommodating the current item
-        log_p, action_log_prob, pointers, dist_entropy, dist, hidden = self._inner(embeddings,
-                                                          deterministic=deterministic,
-                                                          evaluate_action=evaluate_action,
-                                                          shape = embedding_shape,
-                                                          mask = leaf_node_mask,
-                                                          full_mask = full_mask,
-                                                          valid_length = valid_length)
-        return action_log_prob, pointers, dist_entropy, hidden, dist
+        # # Decide the leaf node indices for accommodating the current item
+        # log_p, action_log_prob, pointers, dist_entropy, dist, hidden = self._inner(embeddings,
+        #                                                   deterministic=deterministic,
+        #                                                   evaluate_action=evaluate_action,
+        #                                                   shape = embedding_shape,
+        #                                                   mask = leaf_node_mask,
+        #                                                   full_mask = full_mask,
+        #                                                   valid_length = valid_length)
+        # return action_log_prob, pointers, dist_entropy, hidden, dist
 
     def _inner(self, embeddings, mask = None, deterministic = False, evaluate_action = False, shape = None, full_mask = None, valid_length =None): # 元素齐了
         # The aggregation of global feature
@@ -231,3 +273,7 @@ class AttentionModel(nn.Module):
                 .expand(v.size(0), v.size(1) if num_steps is None else num_steps, v.size(2), self.n_heads, -1)
                 .permute(3, 0, 1, 2, 4)
         )
+    
+
+if __name__ == '__main__':
+    pass

@@ -6,6 +6,7 @@ import torch
 from torch import optim
 from torch.nn.utils import clip_grad_norm_
 from model import DQNBPP
+from attention_model import AttentionModel
 import math
 
 # Finished
@@ -24,8 +25,8 @@ class Agent():
     self.norm_clip = args.norm_clip
 
     shapeArray = torch.tensor(args.shapeArray).type(torch.float).share_memory_()
-    network = DQNBPP
-    self.online_net = network(args, self.action_space, shapeArray).to(device=args.device).share_memory()
+    network = AttentionModel
+    self.online_net = network(embedding_dim=args.embedding_size, hidden_dim=args.hidden_size).to(device=args.device).share_memory()
 
     if args.model:  # Load pretrained model if provided
       if os.path.isfile(args.model):
@@ -36,7 +37,7 @@ class Agent():
         raise FileNotFoundError(args.model)
 
     self.online_net.train()
-    self.target_net = network(args, self.action_space, shapeArray).to(device=args.device).share_memory()
+    self.target_net = network(embedding_dim=args.embedding_size, hidden_dim=args.hidden_size).to(device=args.device).share_memory()
     self.update_target_net()
     self.target_net.train()
     for param in self.target_net.parameters():

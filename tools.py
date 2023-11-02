@@ -140,10 +140,13 @@ def get_args():
     parser.add_argument('--device', type=int, default=0, help='Which GPU will be called')
     parser.add_argument('--seed',   type=int, default=4, help='Random seed')
 
+    parser.add_argument('--noisy-std', type=float, default=0.5, metavar='σ', help='Initial standard deviation of noisy linear layers')
+    parser.add_argument('--atoms', type=int, default=31, metavar='C', help='Discretised size of value distribution')
     parser.add_argument('--use-acktr', type=bool, default=True, help='Use acktr, otherwise A2C')
     parser.add_argument('--num-processes', type=int, default=64, help='The number of parallel processes used for training')
     parser.add_argument('--num-steps', type=int, default=5, help='The rollout length for n-step training')
     parser.add_argument('--learning-rate', type=float, default=1e-6, metavar='η', help='Learning rate, only works for A2C')
+    parser.add_argument('--adam-eps', type=float, default=1.5e-4, metavar='ε', help='Adam epsilon')
     parser.add_argument('--actor-loss-coef',        type=float, default=1.0, help='The coefficient of actor loss')
     parser.add_argument('--critic-loss-coef',       type=float, default=1.0, help='The coefficient of critic loss')
     parser.add_argument('--max-grad-norm',          type=float, default=0.5, help='Max norm of gradients')
