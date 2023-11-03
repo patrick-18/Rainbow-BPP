@@ -7,28 +7,28 @@ import random
 
 class PackingContinuous(gym.Env):
     def __init__(self,
-                 setting,
-                 container_size=(10, 10, 10),
-                 item_set=None, data_name=None, load_test_data=False,
-                 internal_node_holder=80, leaf_node_holder=50, next_holder=1, shuffle=False,
-                 sample_from_distribution = True,
-                 sample_left_bound = 0.1,
-                 sample_right_bound = 0.5,
+                 args,
+                 next_holder=1, 
                  **kwags):
-
-        self.internal_node_holder = internal_node_holder
-        self.leaf_node_holder = leaf_node_holder
+        
+        self.args = args
+        self.setting = args.setting
+        self.bin_size = args.container_size
+        self.item_set = args.item_set
+        self.data_name = args.dataset_path
+        self.load_test_data = args.load_dataset
+        self.internal_node_holder = args.internal_node_holder
+        self.leaf_node_holder = args.leaf_node_holder
         self.next_holder = next_holder
-
-        self.shuffle = shuffle
-        self.bin_size = container_size
-        if sample_from_distribution:
-            self.size_minimum = sample_left_bound
-            self.sample_left_bound = sample_left_bound
-            self.sample_right_bound = sample_right_bound
-        else: self.size_minimum = np.min(np.array(item_set))
-        self.setting = setting
-        self.item_set = item_set
+        self.shuffle = args.shuffle
+        
+        self.sample_from_distribution = args.sample_from_distribution
+        if self.sample_from_distribution:
+            self.size_minimum = args.sample_left_bound
+            self.sample_left_bound = args.sample_left_bound
+            self.sample_right_bound = args.sample_right_bound
+        else: self.size_minimum = np.min(np.array(self.item_set))
+        
         if self.setting == 2: self.orientation = 6
         else: self.orientation = 2
 
@@ -36,21 +36,20 @@ class PackingContinuous(gym.Env):
         self.space = Space(*self.bin_size, self.size_minimum, self.internal_node_holder)
 
         # Generator for train/test data
-        if not load_test_data:
-            assert item_set is not None
-            self.box_creator = RandomBoxCreator(item_set)
+        if not self.load_test_data:
+            assert self.item_set is not None
+            self.box_creator = RandomBoxCreator(self.item_set)
             assert isinstance(self.box_creator, BoxCreator)
 
-        self.sample_from_distribution = sample_from_distribution
-        if load_test_data:
-            self.box_creator = LoadBoxCreator(data_name)
+        if self.load_test_data:
+            self.box_creator = LoadBoxCreator(self.data_name)
 
-        self.test = load_test_data
+        self.test = args.load_test_data
         self.observation_space = gym.spaces.Box(low=0.0, high=self.space.height,
                                                 shape=((self.internal_node_holder + self.leaf_node_holder + self.next_holder) * 9,))
         self.next_box_vec = np.zeros((self.next_holder, 9))
 
-        self.LNES = 'EMS'  # Leaf Node Expansion Schemes: EMS
+        self.LNES = args.LNES  # Leaf Node Expansion Schemes: EMS
 
     def seed(self, seed=None):
         if seed is not None:

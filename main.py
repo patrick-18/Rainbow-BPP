@@ -11,6 +11,7 @@ import random
 from train_tools import train_tools
 from tensorboardX import SummaryWriter
 from tools import get_args, registration_envs
+import gym
 
 def main(args):
 
@@ -40,6 +41,8 @@ def main(args):
     if not os.path.exists(log_writer_path):
         os.makedirs(log_writer_path)
     writer = SummaryWriter(logdir=log_writer_path)
+
+    tmp_env = gym.make(args.id)
 
     # Create parallel packing environments to collect training samples online
     envs = make_vec_envs(args, './logs/runinfo', True)

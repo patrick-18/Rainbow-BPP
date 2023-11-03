@@ -32,18 +32,7 @@ def make_env(env_id, seed, rank, log_dir, allow_early_resets, args):
         else:
             env = gym.make(
                            env_id,
-                           setting = args.setting,
-                           container_size = args.container_size,
-                           item_set = args.item_size_set,
-                           data_name = args.dataset_path,
-                           load_test_data = args.load_dataset,
-                           internal_node_holder = args.internal_node_holder,
-                           leaf_node_holder = args.leaf_node_holder,
-                           LNES = args.lnes,
-                           shuffle = args.shuffle,
-                           sample_from_distribution = args.sample_from_distribution,
-                           sample_left_bound = args.sample_left_bound,
-                           sample_right_bound = args.sample_right_bound
+                           args = args
                            )
 
         env.seed(seed + rank)
@@ -92,16 +81,7 @@ def make_vec_envs(args,
             environment to get it.
         """
         env = gym.make(env_name,
-                       setting = args.setting,
-                       item_set = args.item_size_set,
-                       container_size=args.container_size,
-                       internal_node_holder = args.internal_node_holder,
-                       leaf_node_holder = args.leaf_node_holder,
-                       LNES = args.lnes,
-                       shuffle=args.shuffle,
-                       sample_from_distribution=args.sample_from_distribution,
-                       sample_left_bound=args.sample_left_bound,
-                       sample_right_bound=args.sample_right_bound
+                       args = args
                        )
 
         spaces = [env.observation_space, env.action_space]

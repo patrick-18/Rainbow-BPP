@@ -5,7 +5,6 @@ import numpy as np
 import torch
 from torch import optim
 from torch.nn.utils import clip_grad_norm_
-from model import DQNBPP
 from attention_model import AttentionModel
 import math
 
