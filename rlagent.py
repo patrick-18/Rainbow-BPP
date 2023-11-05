@@ -23,20 +23,19 @@ class Agent():
     self.discount = args.discount
     self.norm_clip = args.norm_clip
 
-    shapeArray = torch.tensor(args.shapeArray).type(torch.float).share_memory_()
     network = AttentionModel
-    self.online_net = network(embedding_dim=args.embedding_size, hidden_dim=args.hidden_size).to(device=args.device).share_memory()
+    self.online_net = network(args=args).to(device=args.device).share_memory()
 
     if args.model:  # Load pretrained model if provided
-      if os.path.isfile(args.model):
-        state_dict = torch.load(args.model, map_location='cpu')  # Always load tensors onto CPU by default, will shift to GPU if necessary
+      if os.path.isfile(args.model_path):
+        state_dict = torch.load(args.model_path, map_location='cpu')  # Always load tensors onto CPU by default, will shift to GPU if necessary
         self.online_net.load_state_dict(state_dict)
         print("Loading pretrained model: " + args.model)
       else:  # Raise error if incorrect model path provided
         raise FileNotFoundError(args.model)
 
     self.online_net.train()
-    self.target_net = network(embedding_dim=args.embedding_size, hidden_dim=args.hidden_size).to(device=args.device).share_memory()
+    self.target_net = network(args=args).to(device=args.device).share_memory()
     self.update_target_net()
     self.target_net.train()
     for param in self.target_net.parameters():

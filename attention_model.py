@@ -42,7 +42,7 @@ class AttentionModel(nn.Module):
         
         self.args = args
         self.atoms = args.atoms
-        self.action_space = 32 # TODO: change this
+        self.action_space = args.action_space
 
         self.embedding_dim = args.embedding_size
         self.hidden_dim = args.hidden_size
@@ -275,5 +275,6 @@ class AttentionModel(nn.Module):
         )
     
 
+# for test
 if __name__ == '__main__':
     pass

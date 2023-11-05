@@ -11,18 +11,12 @@ import torch
 np.set_printoptions(threshold=np.inf)
 
 class train_tools(object):
-    def __init__(self, writer, timeStr, PCT_policy, args):
+    def __init__(self, writer, timeStr, agent, args):
         self.writer = writer
         self.timeStr = timeStr
         self.step_counter = 0
-        self.PCT_policy = PCT_policy
-        self.use_acktr = args.use_acktr
+        self.agent = agent
         seed = args.seed
-
-        if self.use_acktr:
-            self.policy_optim = KFACOptimizer(self.PCT_policy) # For ACKTR method. （https://proceedings.neurips.cc/paper/2017/hash/361440528766bbaaaa1901845cf4152b-Abstract.html）
-        else:
-            self.policy_optim = optim.Adam(self.PCT_policy.parameters(), lr=args.learning_rate) # For naive A2C method.
 
         if seed is not None:
             torch.manual_seed(seed)

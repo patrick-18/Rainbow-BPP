@@ -49,7 +49,7 @@ class PackingContinuous(gym.Env):
                                                 shape=((self.internal_node_holder + self.leaf_node_holder + self.next_holder) * 9,))
         self.next_box_vec = np.zeros((self.next_holder, 9))
 
-        self.LNES = args.LNES  # Leaf Node Expansion Schemes: EMS
+        self.LNES = args.lnes  # Leaf Node Expansion Schemes: EMS
 
     def seed(self, seed=None):
         if seed is not None:

@@ -12,6 +12,8 @@ from train_tools import train_tools
 from tensorboardX import SummaryWriter
 from tools import get_args, registration_envs
 import gym
+from memory import ReplayMemory
+from rlagent import Agent
 
 def main(args):
 
@@ -42,14 +44,20 @@ def main(args):
         os.makedirs(log_writer_path)
     writer = SummaryWriter(logdir=log_writer_path)
 
-    tmp_env = gym.make(args.id)
+    tmp_env = gym.make(args.id, args=args)
+    args.action_space = tmp_env.space.get_action_space()
+    args.obs_len = tmp_env.observation_space.shape[0]
 
     # Create parallel packing environments to collect training samples online
     envs = make_vec_envs(args, './logs/runinfo', True)
 
-    # Create the main actor & critic networks of PCT
-    PCT_policy =  DRL_GAT(args)
-    PCT_policy =  PCT_policy.to(device)
+    # Create the Rainbow DQN agent and replay memory
+    DQN_agent = Agent(args)
+    mem_num = args.num_processes
+    mem_capacity = int(args.memory_capacity / mem_num)
+    memory = [ReplayMemory(args=args, capacity=mem_capacity, obs_len=tmp_env.observation_space.shape[0]) for _ in range(mem_num)]
+
+
 
     # Load the trained model, if needed
     if args.load_model:
@@ -64,3 +72,4 @@ if __name__ == '__main__':
     registration_envs()
     args = get_args()
     main(args)
+
