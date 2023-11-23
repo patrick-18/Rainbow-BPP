@@ -107,7 +107,7 @@ class AttentionModel(nn.Module):
             if 'fc' in name:
                 module.reset_noise()
 
-    def forward(self, input, deterministic = False, evaluate_action = False, normFactor = 1, evaluate = False):
+    def forward(self, input, deterministic = False, evaluate_action = False, normFactor = 1, evaluate = False, log = False):
 
         internal_nodes, leaf_nodes, next_item, invalid_leaf_nodes, full_mask = observation_decode_leaf_node(input,
                                                                                                             self.internal_node_holder,
@@ -145,12 +145,11 @@ class AttentionModel(nn.Module):
         transEmbedding[full_mask]  = 0
         graph_embed = transEmbedding.view(embedding_shape).sum(1)
         transEmbedding = transEmbedding.view(embeddings.shape)
-        graph_embed = graph_embed / valid_length.reshape((-1,1))
+        graph_embed = graph_embed / (valid_length.reshape((-1,1)) + 1e-4)
 
-        log = False
         v = self.fc_z_v(F.relu(self.fc_h_v(graph_embed)))  # Value stream
         a = self.fc_z_a(F.relu(self.fc_h_a(embeddings)))  # Advantage stream
-        v, a = v.view(-1, 1, self.atoms), a.view(-1, self.action_space, self.atoms)
+        v, a = v.view(-1, 1, self.atoms), a.view(-1, 131, self.atoms)
         q = v + a - a.mean(1, keepdim=True)  # Combine streams
         if log:  # Use log softmax for numerical stability
             q = F.log_softmax(q, dim=2)  # Log probabilities with action over second dimension
@@ -159,7 +158,7 @@ class AttentionModel(nn.Module):
         # self.forwardCounter += 1
         # if self.forwardCounter == 1000:
         #     self.updateShapeArray()
-        return q
+        return q[:, self.internal_node_holder: self.internal_node_holder + self.leaf_node_holder, :]
         
         # # Decide the leaf node indices for accommodating the current item
         # log_p, action_log_prob, pointers, dist_entropy, dist, hidden = self._inner(embeddings,

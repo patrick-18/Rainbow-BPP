@@ -6,6 +6,7 @@ import torch
 from torch import optim
 from torch.nn.utils import clip_grad_norm_
 from attention_model import AttentionModel
+from tools import get_leaf_nodes
 import math
 
 # Finished
@@ -22,11 +23,13 @@ class Agent():
     self.n = args.multi_step # For GAE implementation.
     self.discount = args.discount
     self.norm_clip = args.norm_clip
+    self.internal_node_holder = args.internal_node_holder
+    self.leaf_node_holder = args.leaf_node_holder
 
     network = AttentionModel
     self.online_net = network(args=args).to(device=args.device).share_memory()
 
-    if args.model:  # Load pretrained model if provided
+    if args.load_model:  # Load pretrained model if provided
       if os.path.isfile(args.model_path):
         state_dict = torch.load(args.model_path, map_location='cpu')  # Always load tensors onto CPU by default, will shift to GPU if necessary
         self.online_net.load_state_dict(state_dict)
@@ -53,6 +56,7 @@ class Agent():
       sum_q_map = q_map * self.support
       sum_q_map = sum_q_map.sum(2)
       if mask is not None:
+        mask = mask[:, self.internal_node_holder:self.internal_node_holder + self.leaf_node_holder]
         sum_q_map[(1 - mask).bool()] = -math.inf
     return sum_q_map.argmax(1)
 
@@ -80,19 +84,26 @@ class Agent():
     nonterminals = torch.cat(nonterminals, 0).reshape(self.batch_size, 1)
     weights = torch.cat(weights, 0)
 
+    all_nodes, leaf_nodes = get_leaf_nodes(states,
+                                           internal_node_holder=self.internal_node_holder,
+                                           leaf_node_holder=self.leaf_node_holder)
+
     # Calculate current state probabilities (online network noise already sampled)
-    log_ps= self.online_net(states, log=True)  # Log probabilities log p(s_t, ·; θonline)
+    log_ps= self.online_net(all_nodes, log=True)  # Log probabilities log p(s_t, ·; θonline)
     log_ps_a = log_ps[range(self.batch_size), actions]  # log p(s_t, a_t; θonline)
 
     with torch.no_grad():
       # Calculate nth next state probabilities
-      pns = self.online_net(next_states)  # Probabilities p(s_t+n, ·; θonline)
+      all_nodes_next, leaf_nodes_next = get_leaf_nodes(next_states,
+                                                       internal_node_holder=self.internal_node_holder,
+                                                       leaf_node_holder=self.leaf_node_holder)
+      pns = self.online_net(all_nodes_next)  # Probabilities p(s_t+n, ·; θonline)
       dns = self.support.expand_as(pns) * pns  # Distribution d_t+n = (z, p(s_t+n, ·; θonline))
       argmax_indices_ns = dns.sum(2).argmax(1)  # Perform argmax action selection using online network: argmax_a[(z, p(s_t+n, a; θonline))]
 
       self.target_net.reset_noise()  # Sample new target net noise
 
-      pns = self.target_net(next_states)  # Probabilities p(s_t+n, ·; θtarget)
+      pns = self.target_net(all_nodes_next)  # Probabilities p(s_t+n, ·; θtarget)
       pns_a = pns[range(self.batch_size), argmax_indices_ns]  # Double-Q probabilities p(s_t+n, argmax_a[(z, p(s_t+n, a; θonline))]; θtarget)
 
       # Compute Tz (Bellman operator T applied to z)

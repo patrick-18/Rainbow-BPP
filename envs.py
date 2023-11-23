@@ -70,6 +70,9 @@ def make_vec_envs(args,
     num_processes = args.num_processes
     device = args.device
 
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+
     envs = [
         make_env(env_name, seed, i, log_dir, allow_early_resets, args)
         for i in range(num_processes)

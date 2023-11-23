@@ -162,7 +162,7 @@ class PackingDiscrete(gym.Env):
             reward = 0.0
             done = True
             info = {'counter': len(self.space.boxes), 'ratio': self.space.get_ratio(),
-                    'reward': self.space.get_ratio() * 10}
+                    'reward': self.space.get_ratio() * 10, 'Valid': True}
             return self.cur_observation(), reward, done, info
 
         ################################################
@@ -186,5 +186,6 @@ class PackingDiscrete(gym.Env):
         done = False
         info = dict()
         info['counter'] = len(self.space.boxes)
+        info['Valid'] = True
         return self.cur_observation(), reward, done, info
 

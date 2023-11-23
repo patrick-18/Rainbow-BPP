@@ -80,7 +80,7 @@ class train_tools(object):
             pct_rollout.compute_returns(next_value)
 
             ##############################################
-            ########### PCT policy optimzation ###########
+            ########### PCT policy optimization ###########
             ##############################################
             obs_shape = pct_rollout.obs.size()[2:]
             action_shape = pct_rollout.actions.size()[-1]

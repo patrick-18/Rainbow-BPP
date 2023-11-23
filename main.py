@@ -8,9 +8,10 @@ from tools import *
 from envs import make_vec_envs
 import numpy as np
 import random
-from train_tools import train_tools
+from trainer import Trainer
 from tensorboardX import SummaryWriter
-from tools import get_args, registration_envs
+from tools import registration_envs
+from arguments import get_args
 import gym
 from memory import ReplayMemory
 from rlagent import Agent
@@ -39,13 +40,13 @@ def main(args):
 
     # Backup all py files and create tensorboard logs
     backup(timeStr, args, None)
-    log_writer_path = './logs/runs/{}'.format('PCT-' + timeStr)
+    log_writer_path = './logs/runs/{}'.format('RainbowBPP-' + timeStr)
     if not os.path.exists(log_writer_path):
         os.makedirs(log_writer_path)
     writer = SummaryWriter(logdir=log_writer_path)
 
     tmp_env = gym.make(args.id, args=args)
-    args.action_space = tmp_env.space.get_action_space()
+    args.action_space = args.leaf_node_holder
     args.obs_len = tmp_env.observation_space.shape[0]
 
     # Create parallel packing environments to collect training samples online
@@ -57,16 +58,9 @@ def main(args):
     mem_capacity = int(args.memory_capacity / mem_num)
     memory = [ReplayMemory(args=args, capacity=mem_capacity, obs_len=tmp_env.observation_space.shape[0]) for _ in range(mem_num)]
 
-
-
-    # Load the trained model, if needed
-    if args.load_model:
-        PCT_policy = load_policy(args.model_path, PCT_policy)
-        print('Loading pre-train model', args.model_path)
-
     # Perform all training.
-    trainTool = train_tools(writer, timeStr, PCT_policy, args)
-    trainTool.train_n_steps(envs, args, device)
+    trainer = Trainer(writer, timeStr, DQN_agent, memory)
+    trainer.train_q_value(envs, args)
 
 if __name__ == '__main__':
     registration_envs()

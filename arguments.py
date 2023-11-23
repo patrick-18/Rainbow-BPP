@@ -1,5 +1,6 @@
 import argparse
 import givenData
+import numpy as np
 
 def get_args():
     parser = argparse.ArgumentParser(description='Rainbow BPP arguments')
@@ -21,6 +22,8 @@ def get_args():
     parser.add_argument('--atoms', type=int, default=31, metavar='C', help='Discretised size of value distribution')
     parser.add_argument('--V-min', type=float, default=-1, metavar='V', help='Minimum of value distribution support')
     parser.add_argument('--V-max', type=float, default=8, metavar='V', help='Maximum of value distribution support')
+    parser.add_argument('--discount', type=float, default=0.99, metavar='γ', help='Discount factor')
+    parser.add_argument('--reward-clip', type=int, default=0, metavar='VALUE', help='Reward clipping (0 to disable)')
     parser.add_argument('--memory-capacity', type=int, default=int(1e5), metavar='CAPACITY',
                         help='Experience replay memory capacity')
     parser.add_argument('--replay-frequency', type=int, default=4, metavar='k',
@@ -37,20 +40,24 @@ def get_args():
                         help='Max episode length in game frames (0 to disable)')
     parser.add_argument('--history-length', type=int, default=1, metavar='T',
                         help='Number of consecutive states processed')
-    parser.add_argument('--use-acktr', type=bool, default=True, help='Use acktr, otherwise A2C')
-    parser.add_argument('--num-processes', type=int, default=64, help='The number of parallel processes used for training')
-    parser.add_argument('--num-steps', type=int, default=5, help='The rollout length for n-step training')
+    parser.add_argument('--learn-start', type=int, default=int(5e2), metavar='STEPS',
+                        help='Number of steps before starting training')
+    parser.add_argument('--num-processes', type=int, default=8, help='The number of parallel processes used for training')
+    parser.add_argument('--multi-step', type=int, default=3, help='The rollout length for n-step training')
     parser.add_argument('--learning-rate', type=float, default=1e-6, metavar='η', help='Learning rate, only works for A2C')
     parser.add_argument('--adam-eps', type=float, default=1.5e-4, metavar='ε', help='Adam epsilon')
-    parser.add_argument('--actor-loss-coef',        type=float, default=1.0, help='The coefficient of actor loss')
-    parser.add_argument('--critic-loss-coef',       type=float, default=1.0, help='The coefficient of critic loss')
+    parser.add_argument('--batch-size', type=int, default=64, metavar='SIZE', help='Batch size')
     parser.add_argument('--max-grad-norm',          type=float, default=0.5, help='Max norm of gradients')
     parser.add_argument('--embedding-size',     type=int, default=64,  help='Dimension of input embedding')
     parser.add_argument('--hidden-size',        type=int, default=128, help='Dimension of hidden layers')
     parser.add_argument('--gat-layer-num',      type=int, default=1, help='The number GAT layers')
     parser.add_argument('--gamma', type=float, default=1.0, metavar='γ', help='Discount factor')
+    parser.add_argument('--norm-clip', type=float, default=10, metavar='NORM', help='Max L2 norm for gradient clipping')
+    parser.add_argument('--distributed', action='store_true', help='Use distributed training')
 
-    parser.add_argument('--model-save-interval',    type=int,   default=200   , help='How often to save the model')
+    parser.add_argument('--save-interval', default=1000, help='How often to save the model.')
+    parser.add_argument('--checkpoint-interval', default=10000,
+                        help='How often to checkpoint the model, defaults to 0 (never checkpoint)')
     parser.add_argument('--model-update-interval',  type=int,   default=20e30 , help='How often to create a new model')
     parser.add_argument('--model-save-path',type=str, default='./logs/experiment', help='The path to save the trained model')
     parser.add_argument('--print-log-interval',     type=int,   default=10, help='How often to print training logs')
@@ -92,6 +99,9 @@ def get_args():
     if args.evaluate:
         args.num_processes = 1
     args.normFactor = 1.0 / np.max(args.container_size)
+
+    args.load_memory_path = None
+    args.save_memory_path = None
 
     return args
 

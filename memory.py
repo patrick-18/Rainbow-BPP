@@ -163,7 +163,10 @@ class ReplayMemory():
   def _get_sample_from_segment(self, segment, i):
     valid = False
     while not valid:
-      sample = np.random.uniform(i * segment, (i + 1) * segment)  # Uniformly sample an element from within a segment
+      try:
+        sample = np.random.uniform(i * segment, (i + 1) * segment)  # Uniformly sample an element from within a segment
+      except:
+        pass
       prob, idx, tree_idx = self.transitions.find(sample)  # Retrieve sample from tree with un-normalised probability
       # Resample if transition straddled current index or probablity 0
       if (self.transitions.index.value - idx) % self.capacity > self.n and (idx - self.transitions.index.value) % self.capacity >= 1 and prob != 0:

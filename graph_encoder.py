@@ -9,7 +9,7 @@ class SkipConnection(nn.Module):
         self.module = module
 
     def forward(self, input):
-        return {'data':input['data'] + self.module(input), 'mask': input['mask'], 'graph_size':input['graph_size']}
+        return {'data':input['data'] + self.module(input), 'mask': input['mask'], 'graph_size':input['graph_size'], 'evaluate': input['evaluate']}
 
 class SkipConnection_Linear(nn.Module):
     def __init__(self, module):
@@ -17,7 +17,7 @@ class SkipConnection_Linear(nn.Module):
         self.module = module
 
     def forward(self, input):
-        return {'data':input['data'] + self.module(input['data']), 'mask': input['mask'], 'graph_size': input['graph_size']}
+        return {'data':input['data'] + self.module(input['data']), 'mask': input['mask'], 'graph_size': input['graph_size'], 'evaluate': input['evaluate']}
 
 class MultiHeadAttention(nn.Module):
     def __init__(
