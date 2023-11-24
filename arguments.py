@@ -98,9 +98,9 @@ def get_args():
         args.internal_node_length = 7
     if args.evaluate:
         args.num_processes = 1
-    args.normFactor = 1.0 / np.max(args.container_size)
+    args.norm_factor = 1.0 / np.max(args.container_size)
 
-    args.load_memory_path = None
+    args.model_path = './evaltest.pt'
     args.save_memory_path = None
 
     return args
