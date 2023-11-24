@@ -163,7 +163,10 @@ class Trainer(object):
                     if T % args.print_log_interval == 0:
                         self.writer.add_scalar("Training/Value loss",  loss.mean().item(), T)
 
-            state = next_state
+            if np.all(done): # Terminal state
+                state = envs.reset()
+            else:
+                state = next_state
             if len(episode_rewards)!= 0:
                 self.writer.add_scalar('Metric/Reward mean', np.mean(episode_rewards), T)
                 self.writer.add_scalar('Metric/Reward max', np.max(episode_rewards), T)
