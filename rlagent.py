@@ -25,6 +25,7 @@ class Agent():
     self.norm_clip = args.norm_clip
     self.internal_node_holder = args.internal_node_holder
     self.leaf_node_holder = args.leaf_node_holder
+    self.norm_factor = args.norm_factor
 
     network = AttentionModel
     self.online_net = network(args=args).to(device=args.device).share_memory()
@@ -33,7 +34,7 @@ class Agent():
       if os.path.isfile(args.model_path):
         state_dict = torch.load(args.model_path, map_location='cpu')  # Always load tensors onto CPU by default, will shift to GPU if necessary
         self.online_net.load_state_dict(state_dict)
-        print("Loading pretrained model: " + args.model)
+        print("Loading pretrained model...")
       else:  # Raise error if incorrect model path provided
         raise FileNotFoundError(args.model)
 
@@ -52,7 +53,7 @@ class Agent():
   # Acts based on single state (no batch)
   def act(self, state, mask):
     with torch.no_grad():
-      q_map = self.online_net(state)
+      q_map = self.online_net(state, normFactor=self.norm_factor)
       sum_q_map = q_map * self.support
       sum_q_map = sum_q_map.sum(2)
       if mask is not None:
@@ -89,7 +90,7 @@ class Agent():
                                            leaf_node_holder=self.leaf_node_holder)
 
     # Calculate current state probabilities (online network noise already sampled)
-    log_ps= self.online_net(all_nodes, log=True)  # Log probabilities log p(s_t, ·; θonline)
+    log_ps= self.online_net(all_nodes, log=True, normFactor=self.norm_factor)  # Log probabilities log p(s_t, ·; θonline)
     log_ps_a = log_ps[range(self.batch_size), actions]  # log p(s_t, a_t; θonline)
 
     with torch.no_grad():
@@ -97,13 +98,13 @@ class Agent():
       all_nodes_next, leaf_nodes_next = get_leaf_nodes(next_states,
                                                        internal_node_holder=self.internal_node_holder,
                                                        leaf_node_holder=self.leaf_node_holder)
-      pns = self.online_net(all_nodes_next)  # Probabilities p(s_t+n, ·; θonline)
+      pns = self.online_net(all_nodes_next, normFactor=self.norm_factor)  # Probabilities p(s_t+n, ·; θonline)
       dns = self.support.expand_as(pns) * pns  # Distribution d_t+n = (z, p(s_t+n, ·; θonline))
       argmax_indices_ns = dns.sum(2).argmax(1)  # Perform argmax action selection using online network: argmax_a[(z, p(s_t+n, a; θonline))]
 
       self.target_net.reset_noise()  # Sample new target net noise
 
-      pns = self.target_net(all_nodes_next)  # Probabilities p(s_t+n, ·; θtarget)
+      pns = self.target_net(all_nodes_next, normFactor=self.norm_factor)  # Probabilities p(s_t+n, ·; θtarget)
       pns_a = pns[range(self.batch_size), argmax_indices_ns]  # Double-Q probabilities p(s_t+n, argmax_a[(z, p(s_t+n, a; θonline))]; θtarget)
 
       # Compute Tz (Bellman operator T applied to z)
@@ -144,7 +145,7 @@ class Agent():
   # Evaluates Q-value based on single state (no batch)
   def evaluate_q(self, state):
     with torch.no_grad():
-      return (self.online_net(state.unsqueeze(0)) * self.support).sum(2).max(1)[0].item()
+      return (self.online_net(state.unsqueeze(0), normFactor=self.norm_factor) * self.support).sum(2).max(1)[0].item()
 
   def train(self):
     self.online_net.train()
