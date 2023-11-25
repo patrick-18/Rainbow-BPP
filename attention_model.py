@@ -4,7 +4,6 @@ from torch.nn import functional as F
 import math
 from typing import NamedTuple
 from graph_encoder import GraphAttentionEncoder, NoisyLinear
-from distributions import FixedCategorical
 from tools import observation_decode_leaf_node, init
 
 class AttentionModelFixed(NamedTuple):

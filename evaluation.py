@@ -2,7 +2,6 @@ import sys
 if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
     sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
 import time
-from model import *
 from tools import *
 from evaluation_tools import evaluate
 import gym

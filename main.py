@@ -3,7 +3,6 @@ import torch.cuda
 if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
     sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
 import time
-from model import *
 from tools import *
 from envs import make_vec_envs
 import numpy as np
