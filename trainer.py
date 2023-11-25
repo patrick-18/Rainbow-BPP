@@ -162,16 +162,16 @@ class Trainer(object):
 
                     if T % args.print_log_interval == 0:
                         self.writer.add_scalar("Training/Value loss",  loss.mean().item(), T)
+                        if len(episode_rewards) != 0:
+                            self.writer.add_scalar('Metric/Reward mean', np.mean(episode_rewards), T)
+                            self.writer.add_scalar('Metric/Reward max', np.max(episode_rewards), T)
+                            self.writer.add_scalar('Metric/Reward min', np.min(episode_rewards), T)
+                        if len(episode_ratio) != 0:
+                            self.writer.add_scalar('Metric/Ratio', np.mean(episode_ratio), T)
+                        if len(episode_counter) != 0:
+                            self.writer.add_scalar('Metric/Length', np.mean(episode_counter), T)
 
             if np.all(done): # Terminal state
                 state = envs.reset()
             else:
                 state = next_state
-            if len(episode_rewards)!= 0:
-                self.writer.add_scalar('Metric/Reward mean', np.mean(episode_rewards), T)
-                self.writer.add_scalar('Metric/Reward max', np.max(episode_rewards), T)
-                self.writer.add_scalar('Metric/Reward min', np.min(episode_rewards), T)
-            if len(episode_ratio) != 0:
-                self.writer.add_scalar('Metric/Ratio', np.mean(episode_ratio), T)
-            if len(episode_counter) != 0:
-                self.writer.add_scalar('Metric/Length', np.mean(episode_counter), T)
