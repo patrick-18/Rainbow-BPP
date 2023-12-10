@@ -44,7 +44,7 @@ def get_args():
                         help='Number of steps before starting training')
     parser.add_argument('--num-processes', type=int, default=8, help='The number of parallel processes used for training')
     parser.add_argument('--multi-step', type=int, default=3, help='The rollout length for n-step training')
-    parser.add_argument('--learning-rate', type=float, default=1e-6, metavar='η', help='Learning rate, only works for A2C')
+    parser.add_argument('--learning-rate', type=float, default=1e-4, metavar='η', help='Learning rate, only works for A2C')
     parser.add_argument('--adam-eps', type=float, default=1.5e-4, metavar='ε', help='Adam epsilon')
     parser.add_argument('--batch-size', type=int, default=64, metavar='SIZE', help='Batch size')
     parser.add_argument('--max-grad-norm',          type=float, default=0.5, help='Max norm of gradients')
