@@ -103,6 +103,33 @@ def observation_decode_leaf_node(observation, internal_node_holder, internal_nod
     full_mask = observation[:, :, -1]
     return internal_nodes, leaf_nodes, current_box, valid_flag, full_mask
 
+def data_augmentation(observation, container_size):
+    all_nodes = observation.reshape((-1, 9))
+    mask = all_nodes[:, -1].unsqueeze(dim=-1)
+    mask[-1] = 0
+    dummy_nodes = all_nodes * (1 - mask)
+
+    horizontal_flipped_nodes, vertical_flipped_nodes, center_flipped_nodes = all_nodes.clone(), all_nodes.clone(), all_nodes.clone()
+    horizontal_flipped_nodes[:, 0] = container_size[0] - all_nodes[:, 1]
+    horizontal_flipped_nodes[:, 1] = container_size[0] - all_nodes[:, 0]
+    vertical_flipped_nodes[:, 2] = container_size[1] - all_nodes[:, 3]
+    vertical_flipped_nodes[:, 3] = container_size[1] - all_nodes[:, 2]
+    center_flipped_nodes[:, 0] = container_size[0] - all_nodes[:, 1]
+    center_flipped_nodes[:, 1] = container_size[0] - all_nodes[:, 0]
+    center_flipped_nodes[:, 2] = container_size[1] - all_nodes[:, 3]
+    center_flipped_nodes[:, 3] = container_size[1] - all_nodes[:, 2]
+
+    horizontal_flipped_nodes = horizontal_flipped_nodes * mask + dummy_nodes
+    vertical_flipped_nodes = vertical_flipped_nodes * mask + dummy_nodes
+    center_flipped_nodes = center_flipped_nodes * mask + dummy_nodes
+
+    horizontal_flipped_nodes = horizontal_flipped_nodes.reshape(observation.shape)
+    vertical_flipped_nodes = vertical_flipped_nodes.reshape(observation.shape)
+    center_flipped_nodes = center_flipped_nodes.reshape(observation.shape)
+
+    return horizontal_flipped_nodes, vertical_flipped_nodes, center_flipped_nodes
+
+
 def load_policy(load_path, upper_policy):
     print(load_path)
     assert os.path.exists(load_path), 'File does not exist'
