@@ -19,7 +19,7 @@ def main(args):
 
     # The name of this experiment, related file backups and experiment tensorboard logs will
     # be saved to '.\logs\experiment' and '.\logs\runs'
-    custom = 'setting3lr7e-5'
+    custom = 'DAsetting1lr1e-4'
     timeStr = custom + '-' + time.strftime('%Y.%m.%d-%H-%M-%S', time.localtime(time.time()))
 
     if args.no_cuda:

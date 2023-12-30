@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import torch
-from tools import observation_decode_leaf_node, get_leaf_nodes
+from tools import observation_decode_leaf_node, get_leaf_nodes, data_augmentation
 from tqdm import trange
 from collections import deque
 from tensorboardX import SummaryWriter
@@ -133,9 +133,18 @@ class Trainer(object):
             if args.reward_clip > 0:
                 reward = torch.maximum(torch.minimum(reward, reward_clip), -reward_clip)  # Clip rewards
 
-            for i in range(len(state)):
-                if validSample[i]:
-                    self.mem[i].append(state[i], action[i], reward[i], done[i])  # Append transition to memory
+            if not args.DA:
+                for i in range(len(state)):
+                    if validSample[i]:
+                        self.mem[i].append(state[i], action[i], reward[i], done[i])  # Append transition to memory
+            else:
+                horizontal_flipped_state, vertical_flipped_state, center_flipped_state = data_augmentation(state, args.container_size)
+                for i in range(len(state)):
+                    if validSample[i]:
+                        self.mem[i].append(state[i], action[i], reward[i], done[i])
+                        self.mem[i].append(horizontal_flipped_state[i], action[i], reward[i], done[i])
+                        self.mem[i].append(vertical_flipped_state[i], action[i], reward[i], done[i])
+                        self.mem[i].append(center_flipped_state[i], action[i], reward[i], done[i])
 
             if args.distributed:
                 counter.value = T

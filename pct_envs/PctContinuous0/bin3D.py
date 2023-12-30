@@ -14,7 +14,7 @@ class PackingContinuous(gym.Env):
         self.args = args
         self.setting = args.setting
         self.bin_size = args.container_size
-        self.item_set = args.item_set
+        self.item_set = args.item_size_set
         self.data_name = args.dataset_path
         self.load_test_data = args.load_dataset
         self.internal_node_holder = args.internal_node_holder
@@ -179,7 +179,7 @@ class PackingContinuous(gym.Env):
             reward = 0.0
             done = True
             info = {'counter': len(self.space.boxes), 'ratio': self.space.get_ratio(),
-                    'reward': self.space.get_ratio() * 10}
+                    'reward': self.space.get_ratio() * 10, 'Valid': True}
             return self.cur_observation(), reward, done, info
 
         ################################################
@@ -204,5 +204,6 @@ class PackingContinuous(gym.Env):
         done = False
         info = dict()
         info['counter'] = len(self.space.boxes)
+        info['Valid'] = True
         return self.cur_observation(), reward, done, info
 
