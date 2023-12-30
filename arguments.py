@@ -56,11 +56,11 @@ def get_args():
     parser.add_argument('--distributed', action='store_true', help='Use distributed training')
 
     parser.add_argument('--save-interval', default=1000, help='How often to save the model.')
-    parser.add_argument('--checkpoint-interval', default=10000,
+    parser.add_argument('--checkpoint-interval', default=40000,
                         help='How often to checkpoint the model, defaults to 0 (never checkpoint)')
     parser.add_argument('--model-update-interval',  type=int,   default=20e30 , help='How often to create a new model')
     parser.add_argument('--model-save-path',type=str, default='./logs/experiment', help='The path to save the trained model')
-    parser.add_argument('--print-log-interval',     type=int,   default=10, help='How often to print training logs')
+    parser.add_argument('--print-log-interval',     type=int,   default=30, help='How often to print training logs')
 
     parser.add_argument('--evaluate', action='store_true', help='Evaluate only')
     parser.add_argument('--evaluation-episodes', type=int, default=100, metavar='N', help='Number of episodes evaluated')
