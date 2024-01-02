@@ -105,19 +105,21 @@ def observation_decode_leaf_node(observation, internal_node_holder, internal_nod
 
 def data_augmentation(observation, container_size):
     all_nodes = observation.reshape((-1, 9))
-    mask = all_nodes[:, -1].unsqueeze(dim=-1)
-    mask[-1] = 0
+    mask = all_nodes.clone()[:, -1].unsqueeze(dim=-1)
+    mask = mask.reshape((observation.shape[0], -1))
+    mask[:,-1] = 0
+    mask = mask.reshape((-1, 1))
     dummy_nodes = all_nodes * (1 - mask)
 
     horizontal_flipped_nodes, vertical_flipped_nodes, center_flipped_nodes = all_nodes.clone(), all_nodes.clone(), all_nodes.clone()
-    horizontal_flipped_nodes[:, 0] = container_size[0] - all_nodes[:, 1]
-    horizontal_flipped_nodes[:, 1] = container_size[0] - all_nodes[:, 0]
-    vertical_flipped_nodes[:, 2] = container_size[1] - all_nodes[:, 3]
-    vertical_flipped_nodes[:, 3] = container_size[1] - all_nodes[:, 2]
-    center_flipped_nodes[:, 0] = container_size[0] - all_nodes[:, 1]
-    center_flipped_nodes[:, 1] = container_size[0] - all_nodes[:, 0]
-    center_flipped_nodes[:, 2] = container_size[1] - all_nodes[:, 3]
-    center_flipped_nodes[:, 3] = container_size[1] - all_nodes[:, 2]
+    horizontal_flipped_nodes[:, 0] = container_size[0] - all_nodes[:, 3]
+    horizontal_flipped_nodes[:, 3] = container_size[0] - all_nodes[:, 0]
+    vertical_flipped_nodes[:, 1] = container_size[1] - all_nodes[:, 4]
+    vertical_flipped_nodes[:, 4] = container_size[1] - all_nodes[:, 1]
+    center_flipped_nodes[:, 0] = container_size[0] - all_nodes[:, 3]
+    center_flipped_nodes[:, 3] = container_size[0] - all_nodes[:, 0]
+    center_flipped_nodes[:, 1] = container_size[1] - all_nodes[:, 4]
+    center_flipped_nodes[:, 4] = container_size[1] - all_nodes[:, 1]
 
     horizontal_flipped_nodes = horizontal_flipped_nodes * mask + dummy_nodes
     vertical_flipped_nodes = vertical_flipped_nodes * mask + dummy_nodes
