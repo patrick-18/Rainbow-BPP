@@ -78,17 +78,18 @@ def get_args():
 
     if args.no_cuda: args.device = 'cpu'
 
-    args.container_size = givenData.container_size
-    args.item_size_set  = givenData.item_size_set
-
     if args.sample_from_distribution and args.sample_left_bound is None:
         args.sample_left_bound = 0.1 * min(args.container_size)
     if args.sample_from_distribution and args.sample_right_bound is None:
         args.sample_right_bound = 0.5 * min(args.container_size)
 
     if args.continuous:
+        args.container_size = [1, 1, 1]
+        args.item_size_set = givenData.item_size_set
         args.id = 'PctContinuous-v0'
     else:
+        args.container_size = givenData.container_size
+        args.item_size_set = givenData.item_size_set
         args.id = 'PctDiscrete-v0'
 
     if args.setting == 1:
@@ -124,6 +125,8 @@ def get_args_heuristic():
     args.evaluate = True
 
     if args.continuous:
+        args.container_size = [1, 1, 1]
+        args.item_size_set = givenData.item_size_set
         assert args.heuristic == 'LSAH' or args.heuristic == 'OnlineBPH' or args.heuristic == 'BR', 'only LSAH, OnlineBPH, and BR allowed for continuous environment'
 
     if args.setting == 1:
