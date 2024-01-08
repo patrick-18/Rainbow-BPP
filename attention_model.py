@@ -148,7 +148,7 @@ class AttentionModel(nn.Module):
 
         v = self.fc_z_v(F.relu(self.fc_h_v(graph_embed)))  # Value stream
         a = self.fc_z_a(F.relu(self.fc_h_a(embeddings)))  # Advantage stream
-        v, a = v.view(-1, 1, self.atoms), a.view(-1, 131, self.atoms)
+        v, a = v.view(-1, 1, self.atoms), a.view(-1, self.internal_node_holder+self.leaf_node_holder+self.next_holder, self.atoms)
         q = v + a - a.mean(1, keepdim=True)  # Combine streams
         if log:  # Use log softmax for numerical stability
             q = F.log_softmax(q, dim=2)  # Log probabilities with action over second dimension
