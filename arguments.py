@@ -54,6 +54,7 @@ def get_args():
     parser.add_argument('--gamma', type=float, default=1.0, metavar='γ', help='Discount factor')
     parser.add_argument('--norm-clip', type=float, default=10, metavar='NORM', help='Max L2 norm for gradient clipping')
     parser.add_argument('--distributed', action='store_true', help='Use distributed training')
+    parser.add_argument('--DA', action='store_true', help='Use data augmentation')
 
     parser.add_argument('--save-interval', default=1000, help='How often to save the model.')
     parser.add_argument('--checkpoint-interval', default=40000,
@@ -77,17 +78,18 @@ def get_args():
 
     if args.no_cuda: args.device = 'cpu'
 
-    args.container_size = givenData.container_size
-    args.item_size_set  = givenData.item_size_set
-
     if args.sample_from_distribution and args.sample_left_bound is None:
         args.sample_left_bound = 0.1 * min(args.container_size)
     if args.sample_from_distribution and args.sample_right_bound is None:
         args.sample_right_bound = 0.5 * min(args.container_size)
 
     if args.continuous:
+        args.container_size = [1, 1, 1]
+        args.item_size_set = givenData.item_size_set
         args.id = 'PctContinuous-v0'
     else:
+        args.container_size = givenData.container_size
+        args.item_size_set = givenData.item_size_set
         args.id = 'PctDiscrete-v0'
 
     if args.setting == 1:
@@ -123,6 +125,8 @@ def get_args_heuristic():
     args.evaluate = True
 
     if args.continuous:
+        args.container_size = [1, 1, 1]
+        args.item_size_set = givenData.item_size_set
         assert args.heuristic == 'LSAH' or args.heuristic == 'OnlineBPH' or args.heuristic == 'BR', 'only LSAH, OnlineBPH, and BR allowed for continuous environment'
 
     if args.setting == 1:
