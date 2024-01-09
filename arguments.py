@@ -84,7 +84,10 @@ def get_args():
         args.sample_right_bound = 0.5 * min(args.container_size)
 
     if args.continuous:
-        args.container_size = [1, 1, 1]
+        if args.load_dataset:
+            args.container_size = [1, 1, 1]
+        else:
+            args.container_size = givenData.container_size
         args.item_size_set = givenData.item_size_set
         args.id = 'PctContinuous-v0'
     else:
@@ -125,7 +128,10 @@ def get_args_heuristic():
     args.evaluate = True
 
     if args.continuous:
-        args.container_size = [1, 1, 1]
+        if args.load_dataset:
+            args.container_size = [1, 1, 1]
+        else:
+            args.container_size = givenData.container_size
         args.item_size_set = givenData.item_size_set
         assert args.heuristic == 'LSAH' or args.heuristic == 'OnlineBPH' or args.heuristic == 'BR', 'only LSAH, OnlineBPH, and BR allowed for continuous environment'
 
