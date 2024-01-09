@@ -56,7 +56,7 @@ class LoadBoxCreator(BoxCreator):
             self.index = (self.index + 1) % self.traj_nums
         else:
             self.index = index
-        self.boxes = np.array(self.box_trajs[self.index])
+        self.boxes = 10*np.array(self.box_trajs[self.index])
         self.boxes = self.boxes.tolist()
         self.box_index = 0
         self.box_set = self.boxes
