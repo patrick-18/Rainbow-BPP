@@ -78,19 +78,22 @@ def get_args():
 
     if args.no_cuda: args.device = 'cpu'
 
-    if args.sample_from_distribution and args.sample_left_bound is None:
-        args.sample_left_bound = 0.1 * min(args.container_size)
-    if args.sample_from_distribution and args.sample_right_bound is None:
-        args.sample_right_bound = 0.5 * min(args.container_size)
-
     if args.continuous:
-        args.container_size = [1, 1, 1]
+        if args.load_dataset:
+            args.container_size = [1, 1, 1]
+        else:
+            args.container_size = givenData.container_size
         args.item_size_set = givenData.item_size_set
         args.id = 'PctContinuous-v0'
     else:
         args.container_size = givenData.container_size
         args.item_size_set = givenData.item_size_set
         args.id = 'PctDiscrete-v0'
+
+    if args.sample_from_distribution and args.sample_left_bound is None:
+        args.sample_left_bound = 0.1 * min(args.container_size)
+    if args.sample_from_distribution and args.sample_right_bound is None:
+        args.sample_right_bound = 0.5 * min(args.container_size)
 
     if args.setting == 1:
         args.internal_node_length = 6
@@ -125,7 +128,10 @@ def get_args_heuristic():
     args.evaluate = True
 
     if args.continuous:
-        args.container_size = [1, 1, 1]
+        if args.load_dataset:
+            args.container_size = [1, 1, 1]
+        else:
+            args.container_size = givenData.container_size
         args.item_size_set = givenData.item_size_set
         assert args.heuristic == 'LSAH' or args.heuristic == 'OnlineBPH' or args.heuristic == 'BR', 'only LSAH, OnlineBPH, and BR allowed for continuous environment'
 
