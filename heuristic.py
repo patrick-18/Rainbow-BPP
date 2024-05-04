@@ -2,7 +2,7 @@ import givenData
 import numpy as np
 from pct_envs.PctDiscrete0 import PackingDiscrete
 from pct_envs.PctContinuous0 import PackingContinuous
-from tools import get_args_heuristic
+from arguments import get_args_heuristic
 
 '''
 Tap-net: transportand-pack using reinforcement learning.
@@ -582,13 +582,7 @@ if __name__ == '__main__':
     if args.continuous == True: PackingEnv = PackingContinuous
     else: PackingEnv = PackingDiscrete
 
-    env = PackingEnv(setting = args.setting,
-                     container_size = args.container_size,
-                     item_set = args.item_size_set,
-                     data_name = args.dataset_path,
-                     load_test_data = args.load_dataset,
-                     internal_node_holder = 80,
-                     leaf_node_holder = 1000)
+    env = PackingEnv(args)
 
     if args.heuristic == 'LSAH':
         mean, var, length = LASH(env, args.evaluation_episodes)
